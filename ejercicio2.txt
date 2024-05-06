@@ -1,0 +1,21 @@
+Ejercicio 2:
+
+Tengo un algoritmo ordenado estrictamente creciente y quiero saber si existe una posición i tal que A[i] = i.
+
+bool mirror_index(vector<int>& arr, int i, int j){
+    if (i > j){
+        return false;
+    }
+
+    if (i == j){
+        return arr[i] == i;
+    }
+
+    return (arr[i] == i || arr[j] == j) || mirror_index(arr, i+1, (i+j)/2) || mirror_index(arr, (i+j)/2, j-1);
+}
+
+La complejidad de mi algoritmo se ve determinada por:
+
+T(n) = 2 * T(n/2) + O(1)
+
+T(n) = O(n * log n)

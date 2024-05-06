@@ -1,0 +1,26 @@
+Ejercicio 1:
+
+Mi algoritmo de está mas a la izquierda tiene dos pasos:
+
+- Chequa que los elementos de la mitad izquierda superan los de la mitad derecha.
+- Hace recursión sobre cada mitad y chequa que efectivamente cumpla eso.
+
+// Divide and Conquer Algorithm
+bool left_most(vector<int>& arr, int i, int j){
+    if (i == j){
+        return true;
+    }
+
+    int leftSum = sum(arr, i, (i+j)/2);
+    int rightSum = sum(arr, (i+j)/2 + 1, j);
+
+    return (leftSum >= rightSum) && left_most(arr, i, (i+j)/2) && left_most(arr, (i+j)/2 + 1, j);
+}
+
+La complejidad del algoritmo queda determinada por la siguiente ecuación:
+
+T(n) = 2 * T(n/2) + O(n)
+
+Por cada llamada tengo dos problemas de la mitad del tamaño original. Asimismo, antes de hacer la recursión hago un trabajo lineal respecto al n ya que chequeo que se cumplan las sumas.
+
+T(n) = O(n * log n)

@@ -1,0 +1,15 @@
+Ejercicio 3:
+
+Dados a y b quiero calcular a^b en tiempo logarítmico respecto a b.
+
+T(b) = 2 * T(b/2) + O(1) 
+
+Duda: es correcto asumir que multiplicar los resultados es O(1)?
+
+int logarithmic_power(int a, int b){
+    if (b == 1){
+        return a;
+    }
+
+    return logarithmic_power(a, b/2) * logarithmic_power(a, b - b/2); // Esto último es porque b/2 toma el piso de la división
+}

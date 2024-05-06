@@ -1,0 +1,11 @@
+Ejercicio 6:
+
+Vamos a calcular la máxima distancia entre dos nodos de un árbol. Escribo el algoritmo en Haskell por simplicidad para testearlo y para definir la estructura árbol binario.
+
+data AB a = Nil | Bin (AB a) a (AB a)
+
+maximaDistancia :: AB a -> Int
+maximaDistancia Nil = 0
+maximaDistancia (Bin l _ r) = 1 + maximaDistancia l + maximaDistancia r
+
+La máxima distancia en el árbol es: la suma de las máximas distancia de los subarboles + 1 
