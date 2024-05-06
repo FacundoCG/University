@@ -1,0 +1,56 @@
+Ejercicio 11:
+
+a) Escribamos la función recursiva que resuelva el problema. Esta va a trabajar respecto a un conjunto A fijo de n números naturales.
+
+m va a empezar siendo A[1] para simplificar las cosas.
+
+f : Z x {1, ..., n} x Z -> {V, F}
+f(m, i, w) = { m == w                                                             si i = n
+             { False                                                              si m > w
+             { f(m + A[i], i+1, w) || f(m * A[i], i+1, w) || (f m ^ A[i], i+1, w) si no
+
+La llamada que resuelve el problema es:
+f(A[1], 1, w)
+
+b) Usando la función recursiva escribamos un algoritmo que use DP con un enfoque Top-Down:
+
+// DP Algorithm with approach Top-Down
+int solve(vector<int>& A, vector<vector<int>>& memo, int m, int i, int w){
+    int n = A.size();
+    if (i+1 == n){
+        // cout << "Checking the m: " << m << endl;
+        return m == w;
+    }
+
+    if (m > w){
+        // cout << "The current m: " << m << " is useless and the i is: " << i << endl;
+        return 0;
+    }
+
+    if (memo[i][m] == -1){
+        // cout << "The current m is: " << m << " and i is: " << i << endl;
+        memo[i][m] =  solve(A, memo, m+A[i+1], i+1, w) || solve(A, memo, m*A[i+1], i+1, w) || solve(A, memo, pow(m, A[i+1]), i+1, w);
+    }
+
+    return memo[i][m];
+}
+
+solve(A, memoTD, A[0], 0, w);
+
+d) Demostremos que la función recursiva es correcta.
+
+f : Z x {1, ..., n} x Z -> {V, F}
+f(m, i, w) = { m == w                                                             si i = n
+             { False                                                              si m > w
+             { f(m + A[i], i+1, w) || f(m * A[i], i+1, w) || (f m ^ A[i], i+1, w) si no
+
+La llamada que resuelve el problema es:
+f(A[1], 1, w)
+
+Quiero ver que: f(m, i, w) = V sii con los elementos entre las posiciones i y n de A puedo encontrar una secuencia de operaciones que den w.
+
+(=>)
+
+P(n): f(A[1], 1, w) = V ==> con los elementos entre las posiciones 1 y n de A puedo encontrar una secuencia de operaciones que den w
+
+Necesito hacer inducción sobre un i que aparezca en ambos lados de la implicación. No veo como relacionarlo con mi función recursiva ya que mi lista A no es de longitud i.

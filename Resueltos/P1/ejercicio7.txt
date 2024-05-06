@@ -1,0 +1,136 @@
+Ejercicio 7:
+
+Para resolver el problema primero pensemos la resolución de este con fuerza bruta. 
+
+Yo tengo un arreglo de tamaño n en el que cada posición representa el precio de comprar/vender un asteroide ese día.
+
+Para obtener la máxima ganancia posible voy a probar todas las combinaciones de comprar un asteroide en el i-ésimo día y venderlo. Tengamos en 
+cuenta que debo terminar con 0 asteroides para el final de los n días.
+
+La llamada que resuelve el problema sería: gananciaMaxima(asteroides, 0, 0, 0). 
+
+Esto sería para indicar que empiezo en el día 0 con una ganancia de $0 y una cantidad 0 de asteorides comprados.
+
+int n = asteroides.size();
+
+int gananciaMaxima(vector<int> asteroides, int i, int g, int c){
+	if (i == n){
+		return g;
+	}
+
+	if (c > 0){
+		return max (gananciaMaxima(asteroides, i+1, g+asteroides[i], c-1), gananciaMaxima(asteroides, i+1, g-asteroides[i], c+1), 
+				gananciaMaxima(asteroides, i+1, g, c));
+	} else {
+		return max (gananciaMaxima(asteroides, i+1, g-asteroides[i], c+1), gananciaMaxima(asteroides, i+1, g, c));
+	}
+}
+
+Si yo estoy en el día i-ésimo tengo 3 posibilidades: comprar, vender o no hacer nada. Notar que si quiero vender necesito si o si tener por lo menos un asteroide. Esta toma de decisiones es representada por mi if-else. Yo tengo que tomar n decisiones y tengo 3 u 2 posibilidades dependiendo del 
+día. La complejidad de mi algoritmo es entonces: O(3^n). Notar que con este algoritmo me estoy metiendo en algunos caminos que claramente ni siquierason soluciones parciales porque tomo decisiones absurdas. Por ejemplo, si tengo 10 asteroides y me quedan 10 días por evaluar, mi algoritmo va a 
+considerar como una opción plausible el hecho de seguir comprando más asteroides. Si quisiera evitar este tipo de ramas que no me van a llegar a ninguna solución válida podría meter una poda utilizando backtracking. De igual forma, la complejidad no dejaría de ser de orden exponencial. 
+
+Este planteamiento es útil, pero no se adecua muy bien a la función recursiva propuesta que vamos a discutir más abajo.
+
+b) Escribamos la función recursiva según lo que dice el item a).
+
+mgn : {0, ... , n} x Z -> N 
+mgn (j,c) = { 0 							                                 si j = 0 && c = 0
+	        { - infinito 					                                 si (c < 0) || (c > j) 
+	        { max (mgn(j-1,c-1) - A[j], mgn(j-1, c+1) + A[j], mgn(j-1, c))     si no
+
+c)
+
+mgn(n,0) me da la respuesta del problema.
+
+mgn(n,0) = max (mgn(j-1,c-1)-A[j], mgn(j-1, c+1) + A[j], mgn(j-1, c))
+
+Quiero obtener la máxima ganancia neta posible de terminar el día n con 0 asteroides. Esto es igual a:
+- mgn(n-1, 1) + A[n] = la máxima ganancia neta de terminar el día n-1 con 1 asteroide más lo que gano vendiendolo el día n.
+- mgn(n-1, 0) = la máxima ganancia neta de terminar el día n-1 con 0 asteroides. 
+
+Obs: mgn(n-1,-1) es un absurdo querer comprar un asteroide en el día n y por eso no lo considero (devuelvo -infinito para descartar ese caso).
+
+d) Usando la función recursiva voy a escribir un algoritmo que use PD con un enfoque Top-Down para resolver el problema.
+
+int mgn_TD(vector<int>& asteroides, vector<vector<int>>& memo, int j, int c){
+	if (j == -1 && c == 0){
+		return 0;
+	}
+	
+    if (j+1 < c || c < 0){
+		return INT_MIN;
+	}	
+
+	if (memo[j][c] == -1){
+		comprar = mgn(asteroides, j-1, c-1, memo) - asteroides[j];
+        pasar = mgn(asteroides, j-1, c, memo);
+		vender = mgn(asteroides, j-1, c+1, memo) + asteroides[j];
+		memo[j][c] = max(comprar,pasar, vender);
+	}
+
+	return memo[j][c];
+}
+ 
+Discutamos un poco el algoritmo. 
+
+El primer if me va a devolver 0 si terminé de recorrer los n días y tengo 0 asteroides. Esto quiere decir que la recursión fue exitosa.
+
+El segundo if me va a filtrar todos los absurdos:
+- Cuando estoy comprando de más (tengo más asteroides que días restantes).
+- Cuando estoy intentando vender y no tengo asteroides. 
+
+Me va a devolver un valor muy chico con el objetivo de que este sea ignorado al momento de tomar el máximo en el caso recursivo.
+ 
+Si mi posición de memo no está definida, va a valer -1. En ese caso, hago recursión para definirla y la devuelvo. 
+
+mgn(asteroides, memo, n-1, 0);
+ 
+Esta llamada va a encargarse de definir la posición memo[n-1][0] que va a representar la máxima ganancia neta de terminar el día n con 0 asteroides.  
+
+La complejidad temporal del algoritmo es O(n^2) porque la cantidad de llamadas recursivas está acotada por la cantidad de estados de la matriz n x n. Cada llamada cuesta O(1) (sin contar la recursión). Luego, haciendo cantidad de llamadas por la complejidad de estas llego a la complejidad mencionada.
+
+Por otro lado, la complejidad espacial también es O(n^2). Definir memo cuesta eso y es lo que predomina en mi algoritmo. 
+
+e) Resolvamos el problema usando PD pero con un enfoque Bottom-Up que sea eficiente respecto a la memoria.
+
+int maximize_net_profit_from_asteroids_BU_V2(vector<int>& asteroids){
+    int n = asteroids.size();
+    vector<vector<int>> memo(2, vector<int>(n+1, INT_MIN));
+    memo [0][0] = 0;
+    memo [0][1] = -asteroids[0];
+
+    int yesterday = 0;
+    int today = 1;
+
+    for (int i = 1; i < n; i++){
+        for (int j = n; j > -1; j--){
+            int pass = memo[yesterday][j];
+            int buy = INT_MIN;
+            int sell = INT_MIN;
+
+            if (j < n){
+                sell = memo[yesterday][j+1] + asteroids[i];
+            }
+
+            if (j > 0 && memo[yesterday][j-1] != INT_MIN){
+                buy = memo[yesterday][j-1] - asteroids[i];
+            }
+
+            memo[today][j] = max(buy, max(sell, pass));
+        }
+
+        if (yesterday == 0){
+            yesterday++;
+            today--;
+        } else {
+            yesterday--;
+            today++;
+        }
+    }
+
+	return memo[yesterday][0];
+}
+
+
+

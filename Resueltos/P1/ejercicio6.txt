@@ -1,0 +1,179 @@
+Ejercicio 6:
+
+Observación: voy a asumir que con mi conjunto de billetes siempre voy a ser capaz de pagar el costo. Además, este último debe ser mayor o igual a 0. Estas dos asunciones las hago para que el problema tenga sentido.
+
+Notemos que si bien nosotros queremos calcular (costo original del producto + vuelto mínimo, cantidad billetes usados) lo interesante de este problema es calcular el (vuelto mínimo, cantidad billetes usados) ya que solo bastaría sumar el costo original del producto a esto para obtener el resultado. Habiendo aclarado esto, voy a diseñar los algoritmos que calculen lo primero y chequear que la función en que se basan sea correcta.
+
+a/b) Implementemos un algoritmo de BT que calcule lo pedido:
+
+tuple<int, int> optimal_pay_BT(vector<int>& money, int i, int c){
+	if (i == -1 && c > 0){
+		return {INT_MAX, INT_MAX};
+	}
+
+	if (c <= 0){
+		return {abs(c), 0};
+	}
+
+	return minTuple(optimal_pay_BT(money,i-1,c), sumTuple(optimal_pay_BT(money,i-1, c-money[i]), {0,1}));
+}
+
+Como estoy volviendo a probar todas las combinaciones posibles de billetes para efectuar el pago, la complejidad de mi algoritmo es O(2^n).
+
+c) Escribamos la función recursiva que hace lo anterior teniendo a un B fijo:
+
+cc(i, c) = { (+inf, +inf)                              si i = 0 && c > 0 
+		   { (|c|, 0)                                  si c <= 0
+		   { min(cc(i-1,c), cc(i-1, c-B[i]) + (0, 1))  si no
+
+d/e/f) Escribamos un algoritmo que use PD con un enfoque Top-Down para resolver el problema.
+
+tuple<int,int> optimal_pay_TD (vector<int>& money, vector<vector<tuple<int,int>>>& memo, int i, int c){
+	if (i == -1 && c > 0){
+		return {INT_MAX, INT_MAX};
+	}
+
+	if (c <= 0){
+		return {abs(c), 0};
+	}
+
+	if (memo[i][c] == {INT_MIN,INT_MIN}){
+		memo[i][c] = minTuple(optimal_pay_BT(money,memo,i-1,c), sumTuple(optimal_pay_BT(money,memo,i-1, c-money[i]), {0,1}));
+	}
+
+	return memo[i][c];
+}
+
+La complejidad de este algoritmo es O(n*c) y la llamada que resuelve el problema es:
+optimal_pay_TD(money, memo, n-1, c);
+
+g) Escribamos ahora un algoritmo que use PD pero con un enfoque Bottom-Up.
+
+tuple<int,int> optimal_pay_BU (vector<int>& money, int c){
+	int n = money.size();
+	vector<vector<tuple<int,int>>> memo (n+1, vector<tuple<int,int>>(c+1, {INT_MAX, INT_MAX}));
+	memo[0][0] = {0, 0};
+
+	for (int i = 1; i<n+1; i++){
+		for (int j = 0; j<c+1; j++){
+			if (j - money[i-1] >= 0){
+				memo[i][j] = minTuple(memo[i-1][j], sumTuple(memo[i-1][j-money[i-1]],{0,1}));
+			} else {
+				memo[i][j] = minTuple(memo[i-1][j], {abs(j-money[i-1]), 1});
+			}
+		}
+	}
+
+	return memo[n][c];
+}
+
+Si quiero optimizar el algoritmo anterior en cuanto a memoria, puedo hacer lo siguiente:
+
+tuple<int,int> optimal_pay_BU_V2 (vector<int>& money, int c){
+	int n = money.size();
+	vector<tuple<int,int>> memo (c+1, {INT_MAX, INT_MAX});
+	memo[0] = {0, 0};
+
+	for (int i = 1; i<n+1; i++){
+		for (int j = c; j > -1; j--){ 
+			if (j - money[i-1] >= 0){
+				memo[j] = minTuple(memo[j], sumTuple(memo[j-money[i-1]],{0,1}));
+			} else {
+				memo[j] = minTuple(memo[j], sumTuple({abs(j-money[i-1]), 0},{0,1}));
+			}
+		}
+	}
+
+	return memo[c];
+}
+
+Notar que como itero en el segundo for es importante. Si empezara desde j = 0, podría tener errores.
+Por ejemplo, supongamos que ya calculé los pagos óptimos con los billetes {B_1, ..., B_i}. Cuando vaya a calcular
+los pagos óptimos con {B_1, ..., B_{i+1}} si actualizo desde los costos más chicos, podría suceder que cuando quiera calcular
+el costo de c en lugar de hacerlo combinando los resultados viejos use los resultados actualizados que refieren a otro conjunto.
+Para evitar ese tipo de problemas, es preferible iterar de forma decreciente ya que me aseguro que de esa forma que se usen los pagos
+óptimos referidos a los conjuntos viejos.
+
+h) 
+
+Quiero probar que mi función original es correcta. Recordemos que la función original es:
+
+cc' : {0, ..., n} x Z+ U {0} -> (Z, Z)
+cc'(i, j) = (j, 0) + cc(i, j)
+
+Para probar que cc' es correcta hay que ver que:
+
+cc'(i, j) = (v, k) para el mínimo (v, k) tal que existe un subconjunto V de {B_1, ..., B_i} con sumatoria(V) >= j.
+
+Probemoslo por inducción en i.
+
+P(i): cc'(i, j) = (v, k) para el mínimo (v, k) tal que existe un subconjunto V de {B_1, ..., B_i} con sumatoria(V) >= j
+
+P(0): cc'(0, j) = (j, 0) + cc(0, j)
+
+Notar que para que el problema tenga sentido j debe ser 0. Luego,
+
+cc'(0, 0) = (0, 0) y está claro que el subconjunto {} suma 0 y nos da el mínimo que es (0, 0).
+
+P(i+1): cc'(i+1, j) = (v, k) para el mínimo (v, k) tal que existe un subconjunto V de {B_1, ..., B_{i+1}} con sumatoria(V) >= j
+
+Quiero ver que P(i) ==> P(i+1). Mi HI es P(i).
+
+Voy a dividir en casos respecto a j para trabajar más cómodo.
+
+- Si j = 0: cc'(i+1, 0) = (0, 0) + cc(i+1, 0) = (0, 0) y se ve devuelve que el subconjunto {} suma 0 y mínimiza (v,k)
+- Si j > 0: cc'(i+1, j) = (j, 0) + cc(i+1, j) = (j, 0) + min(cc(i,j), cc(i, j-B[i+1]) + (0,1))
+
+- Si cc(i,j) <= cc(i, j-B[i+1]) + (0,1):
+cc'(i+1, j) = (j, 0) + cc(i, j) = cc'(i, j) = (v, k)
+
+Por mi HI, sé que existe un subconjunto V de {B_1, ..., B_i} tal que mínimiza (v, k) y que su sumatoria es >= j. Este subconjunto
+también va a estar presente en {B_1, ..., B_{i+1}} pero todavía no puedo afirmar que siga minimizando (v, k). Podría llegar a existir un subconjunto A
+en {B_1, ..., B_{i+1}} que lo minimice y sume j. Hay que notar que A no puede estar en {B_1, ..., B_i} porque por HI V es mejor. Luego, B_{i+1} pertenece a A.
+
+Volviendo a usar mi HI: cc'(i, j-B[i+1]) = (k, m) y existe un subconjunto que lo minimiza que es A
+
+Como cc(i,j) <= cc(i, j-B[i+1]) + (0,1) => cc'(i, j) <= cc'(i, j-B[i+1]) + (0,1)
+
+-- Versión incorrecta:
+Quiero probar que mi función es correcta. Para ver esto voy a demostrar por inducción que cc'(i,j) = (v,k) para el mínimo (v,k) tal que existe un subconjunto V de {b_1, ..., b_i} con sumatoria(V) >= j.
+
+- P(i): cc'(i,j) = (v,k) => Para el mínimo (v,k) existe un subconjunto V de {b_1, ..., b_i} con sumatoria(V) >= j
+
+- P(0): Por las condiciones de mi problema que i = 0 => j = 0
+Luego, cc'(0,0) = (0,0). Es claro que el conjunto vacío es subconjunto de V y que cumple con que su sumatoria sea >= 0 y que minimice a (v,k).
+
+- P(i+1): cc'(i+1,j) = (v,k) => Para el mínimo (v,k) existe un subconjunto V de {b_1, ..., b_{i+1}} con sumatoria(V) >= j
+
+Recordemos que P(i) es mi HI.
+
+Voy a dividir a j en dos casos para poder hacer la demostración más cómodo.
+
+- Si j = 0: se ve reemplazando directamente.
+
+- Si j > 0:
+
+ cc'(i+1,j) = (j,0) + v(i+1,j) = (j,0) + min (v(i,j), v(i,j-B[i+1]) + (0,1)) = min((j,0) + v(i,j), (j,0) + v(i,j-B[i+1]) + (0,1))
+ cc'(i+1,j) = min (cc'(i,j), (j,0) + v(i,j-B[i+1]) + (0,1)) = (v,k)
+
+ Analicemos que ocurre en cada caso:
+
+- Si cc'(i,j) <= (j,0) + v(i,j-B[i+1]) + (0,1):
+ cc'(i+1,j) = cc'(i,j) = (v,k) => por HI para el mínimo (v,k) existe un subconjunto V de {b_1, ..., b_i} con sumatoria(V) >= j => 
+ para el mínimo (v,k) existe un subconjunto V de {b_1, ..., b_{i+1}} con sumatoria(V) >= j
+
+- Si (j,0) + v(i,j-B[i+1]) + (0,1) < cc'(i,j):
+ cc'(i+1,j) = (j,0) + v(i,j-B[i+1]) + (0,1) = (v,k)
+ cc'(i+1,j) = (j-B[i+1],0) + v(i,j-B[i+1]) + (B[i+1],0) + (0,1) = (v,k)
+ cc'(i+1,j) = cc'(i, j-B[i+1]) + (B[i+1],1) = (v,k)
+ cc'(i+1,j) = cc'(i, j-B[i+1]) = (v-B[i+1], k-1) => por HI (v-B[i+1],k-1) es el pago óptimo de j-B[i+1] y existe un subconjunto V de {b_1, ..., b_i}
+ con sumatoria(V) >= j-B[i+1] 
+
+ Notar que V u {b_{i+1}} es un subconjunto de {b_1, ..., b_{i+1}} y sumatoria(V u {b_{i+1}}) >= j. Asimismo, es el mínimo porque de no usar a B[i]
+ estaría en el caso cc'(i,j) y por hipótesis el pago de eso es mayor al de cc'(i, j-B[i+1]). En conclusión (v,k) es el pago mínimo y existe un 
+ subconjunto que cumple lo pedido.
+
+ Finalmente, probé que P(i) => P(i+1).
+
+ Por lo tanto, mi función recursiva es correcta porque demostré que el resultado de cc'(i,j) es el mínimo (v,k) tal que existe un subconjunto V de 
+ {b_1, ..., b_i} con sumatoria(V) >= j.

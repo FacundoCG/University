@@ -1,0 +1,59 @@
+Ejercicio 10:
+
+a/b) Escribamos la función recursiva que nos sirve para describir el problema:
+
+f: {1, ..., n} x Z -> Z
+f(i, p) = { 0                                si i = 0
+          { f(i-1, p)                        si T[i] < P
+          { max(f(i-1, p), f(i-1, p+W[i])+1) si no
+
+La llamada que resuelve el problema es f(n, 0).
+
+c)
+
+Escribamos el algoritmo de DP con un enfoque Top-Down:
+
+int longest_stack_search_TD (vector<int>& weights, vector<int>& tolerances, int i, int p){
+    if (i == -1){
+        return 0;
+    }
+
+    if (memo[i][p] == -1){
+        int ignore_box = longest_stack_search_TD (weights, tolerances, i-1, p);
+        if (tolerane[i] < P){
+            memo[i][p] = ignore_box;
+        } else {
+            int using_box = longest_stack_search_TD (weights, tolerances, i-1, p+weights[i]);
+            memo[i][p] = max(ignore_box, using_box);
+        }
+    }
+
+    return memo[i][p];
+}
+
+Ahora escribamos un algoritmo que use DP pero con un enfoque Bottom-Up:
+
+int longest_stack_search_BU(vector<int>& weights, vector<int>& tolerances){
+    int p = weights[0];
+    int maxWeight = sum(weights);
+    int n = weights.size();
+    vector<vector<int>> memo(n, vector<int>(maxWeight + 1, -1));
+    memo[n-1][0] = 1;
+
+    for (int i = n-2; i >= 0; i++){
+        for (int j = 0; j < n; j++){
+            int ignore_box = memo[n-i][j];
+            int using_box = -1;
+
+            if (j + weights[i] <= tolerances[n-i] && j + weights < maxWeight + 1) {
+                using_box = memo[n-1][j + weights[i]] + 1;
+            }
+
+            memo[i][j] = max(ignore_box, using_box); 
+        }
+    }
+
+    return memo[0][0];
+}
+
+

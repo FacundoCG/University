@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.html": "html",
+        "tuple": "cpp",
+        "ostream": "cpp"
+    },
+        "editor.formatOnSave": true
+}

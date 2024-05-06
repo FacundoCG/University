@@ -1,0 +1,72 @@
+/* tuple<int, int> maxTuple(tuple<int, int>& a, tuple<int, int>& b){
+    if (get<0>(a) > get<0>(b)){
+        return a;
+    } else if (get<0>(a) < get<0>(b)){
+        return b;
+    } else {
+        if (get<1>(a) > get<1>(b)){
+            return a;
+        } else {
+            return b;
+        }
+    }
+} */
+
+/* if (memo[h][i] != -1){
+        return memo[h][i];
+    }
+
+    if (h == 1){
+        if (trees[i].find(1) != trees[i].end()){
+            memo[h][i] = trees[i][1] + maximize_acorns(trees, memo, h-1, i, f);
+        } else {
+            memo[h][i] = maximize_acorns(trees, memo, h-1, i, f);
+        }
+    } else {
+        int t = trees.size();
+        int extra = 0;
+
+        if (trees[i].find(h) != trees[i].end()){
+            extra = trees[i][h];
+        } else {
+            extra = 0;
+        }
+
+        memo[h][i] = 0;
+        memo[h][i] = maximize_acorns(trees, memo, h-1, i, f) + extra;
+
+        for (int j = 0; j < t; j++){
+            if (j != i){
+                memo[h][i] = max(memo[h][i], maximize_acorns(trees, memo, h-2, j, f));
+            }
+        }
+    } */
+
+
+int maximize_acorns_TD(vector<vector<int>>& trees, vector<vector<int>>& memo, int h, int i, int f){
+    if (h == 0){
+        return trees[i][0];
+    }
+
+    if (memo[h][i] == -1){
+        int extra = trees[i][h];
+
+        memo[h][i] = extra + maximize_acorns_TD(trees, memo, h-1, i, f);
+        
+        if (h - f >= 0){
+            int t = trees.size();
+
+            for (int j = 0; j < t; j++){
+                if (i != j){
+                    memo[h][i] = max(memo[h][i], extra + maximize_acorns_TD(trees, memo, h-f, j, f));
+                }
+            }
+        }
+    }
+
+    return memo[h][i];
+} 
+
+for (int j = 0; j < t; j++) {
+            res = max(res, maximize_acorns_TD(trees, memo, h, j, f));
+        }

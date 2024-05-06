@@ -1,0 +1,82 @@
+Ejercicio 8:
+
+Discutamos un poco el problema. Tengo una vara de madera de longitud l y tengo que hacer n cortes en ella en determinadas posiciones.
+Hacer un corte en una vara de longitud l me va a costar l. Entonces, quiero ver la forma de cortar la vara con esos n cortes tales que mínimice el costo de estos.
+
+Está claro que hacer un corte en la posición k en la vara de longitud l me va a dejar con dos varas de longitud l-k y k.
+Si puedo denotar a una vara con el intervalo que abarca: (i,j) donde i es la posición donde comienza y j la que termina.
+
+Puedo descartar rápidamente todos los cortes que no estén en el intervalo [i,j].
+
+a/b) Escribamos la función recursiva según la sugerencia del item a:
+
+f: Z x Z -> Z
+f(i, j, C) = { 0                                                                                                          si |C| = 0
+			 { +inf                                                                                                       si j < i
+	         { j - i + min(f(i, C[1], C - C[1]) + f(C[1], j, C - C[1]), ..., f(i, C[n], C - C[n]) + f(C[n], j, C - C[n])) si no
+
+c)
+
+int optimal_cuts_TD(vector<int>& cuts, specialVector& availableCuts, vector<vector<int>>& memo, int i, int j){
+	int n = cuts.size();
+
+    if (n == 0){
+        return 0;
+    }
+
+	if (availableCuts.cutsUsed() == n){
+		return 0;
+	}
+
+	if (i > j){
+		return INT_MAX;
+	}
+
+	if (memo[i][j] == INT_MAX){
+		for (int k = 0; k < n; k++){
+			if (availableCuts.available(k)){
+				availableCuts.setFalse(k);
+                                int leftHalf = optimal_cuts_TD(cuts, availableCuts, memo, i, cuts[k]);
+                                int rightHalf = optimal_cuts_TD(cuts, availableCuts, memo, cuts[k], j);
+
+                                if (leftHalf != INT_MAX && rightHalf != INT_MAX){
+                                        memo[i][j] = min(memo[i][j], (j-i) + leftHalf + rightHalf);
+                                } else if (leftHalf != INT_MAX){
+                                        memo[i][j] = min(memo[i][j], (j-i) + leftHalf);
+                                } else if (rightHalf != INT_MAX){
+                                        memo[i][j] = min(memo[i][j], (j-i) + rightHalf);
+                                }
+				availableCuts.setTrue(k);
+			}
+		}
+	}
+
+	return memo[i][j];
+}
+
+Este algoritmo tiene una complejidad espacial y temporales de O(l^2) donde l denota la longitud de la tabla.
+
+Me diseñe una estructura de vector<bool> especial para poder calcular la cantidad de falses en el vector en O(1).
+Esto me sirve porque dicha cantidad representa la cantidad de cortes usados.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

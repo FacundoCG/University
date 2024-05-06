@@ -1,0 +1,176 @@
+Ejercicio 5:
+
+Sea n = |C| y sea ss' fija respecto a un C.
+
+ss': {0, ..., n} x {0, ..., k} -> {V,F}
+ss' (i, j) = { j = 0                            si i = 0
+             { ss'(i-1, j)                      si i !=0 && C[i] > j
+             { ss'(i-1, j) || ss'(i-1, j-C[i])  si no
+
+
+a)
+
+Mi algoritmo del ejercicio 1 es una implementación por BT de esta función:
+
+bool subset_sum (vector<int>& C, int i, int j):
+        if (i == 0){
+            return j == 0;
+        }
+
+        return subset_sum(C, i-1, j) || subset_sum(C, i-1, j-C[i]);
+
+Se puede concluir que O(2^n) llamadas recursivas de ss' son suficientes para resolver el problema porque con cada llamada exploro un nuevo subconjunto de C y como la cantidad de estos esta acotada por 2^n puedo afirmar que con 2^n llamadas ya recorrí todas las posibilidades.
+
+b)
+
+Quiero ver que si k << (2^n)/n, entonces algunas instancias de ss' son calculadas muchas veces por el algoritmo de BT. Mostremos un ejemplo:
+
+Sea k = 0 y n = 5. Luego, 1 << 32/5
+
+*Obs: recordemos que C es un multiconjunto.
+
+Sea C = {0, 4, 2, 1, 1}
+
+subset_sum(C, 5, 0) = subset_sum(C, 4, 0) || subset_sum(C, 4, -1)
+= subset_sum(C, 3, 0) || subset_sum(C, 3, -1) || subset_sum(C, 3, -1) || subset_sum(C, 3, -2) = ...
+
+Notar que estoy calculando varias veces el caso subset_sum(C, 3, -1).
+
+c) Escribamos ahora un algoritmo que use PD para resolver el problema con un enfoque Top-Down.
+
+int n = C.size();
+int undefined = INT_MIN;
+vector<vector<int>> memo (n+1, vector<int>(k+1, undefined));
+
+bool subset_sum_TD(vector<int>& C, vector<vector<int>>& memo, int i, int j){
+    if (j < 0){
+        return false;
+    }
+
+    if (i == 0){
+        return j == 0;
+    }
+
+    if (memo[i][j] == undefined){
+        memo[i][j] = subset_sum_TD(C, memo, i-1, j) || subset_sum_TD(C, memo, i-1, j-C[i]);
+    }
+
+    return memo[i][j];
+}
+
+d) 
+
+La complejidad de este algoritmo es O(nk) ya que mi función a lo sumo puede hacer tantas llamadas recursivas como estados en la matriz. Y como cada llamada recursiva hace trabajo O(1) si no contamos la recursión, la complejidad me queda #llamadas * complejidad de llamada = O(nk).
+
+- Si k << 2^n: el algoritmo de PD es mejor que el de BT porque
+O(nk) "<" O(2^n)
+
+- Si 2^n << k: el algoritmo de BT es mejor que el de PD porque
+O(2^n) "<" O(nk)
+
+e/f) Escribamos ahora un algoritmo que use PD pero con un enfoque Bottom-Up.
+
+bool subset_sum_BU(vector<int>& C, int j){
+    vector<vector<bool>> memo (n+1, vector<bool>(j+1));
+
+    for (int k = 0; k < j+1; k++){
+        memo[0][k] = k == 0;
+    }
+
+    for (int i = 1; i < n+1; i++){
+        for (int k = 0; k < j+1; k++){
+            memo[i][k] = memo[i-1][k] || (k-C[i-1] >= 0 && memo[i-1][k-C[i-1]]);
+        }
+    }
+
+    return memo[n][j];
+}
+
+Puedo hacer este algoritmo más eficiente respecto al espacio dandome cuenta que todo el tiempo calculo la fila actual basandome en la anterior.
+
+bool subset_sum_BU(vector<int>& C, int j){
+    vector<bool> memo (j+1);
+    memo[0] = true;
+
+    for (int i = 1; i < n+1; i++){
+        for (int k = 0; k < j+1; k++){
+            memo[k] = memo[k] || (k-C[i-1] >= 0 && memo[k-C[i-1]]);
+        }
+    }
+
+    return memo[j];
+}
+
+g) Quiero demostrar que ss' es correcta. Voy a usar inducción en i para probar que:
+existe algún subconjunto de {C_1, ..., C_i} que suma j si y solo si ss'(i, j) = V
+
+(=>)
+
+P(i): existe algún subconjunto de {C_1, ..., C_i} que suma j => ss'(i, j) = V
+P(0): existe algun subconjunto de {} que suma j => ss'(0, j) = V
+
+Supongo que el antecedente es verdadero (si es falso, es trivial) y llego a la conclusión que j = 0 porque es la única suma posible del conjunto vacío.
+
+Luego, ss'(0, 0) = V por definición de ss'
+
+P(i+1): existe algún subconjunto A de B = {C_1, ..., C_{i+1}} que suma j => ss'(i+1, j) = V
+
+Probemoslo por absurdo. Supongo que existe un subconjunto de {C_1, ..., C_{i+1}} que suma j y ss'(i+1, j) = F
+
+ss'(i+1, j) = { ss'(i, j)                     si i != 0 && C[i+1] > j
+              { ss'(i, j) || ss'(i, j-C[i+1]) si no
+
+- Si C_{i+1} no pertenece a A: puedo ver que A está incluido en B {C_1, ..., C_i}.
+
+Como supuse que A suma j entonces puedo usar la HI y concluir que ss'(i, j) = V.
+
+Luego, para cualquiera de los dos casos de ss'(i+1, j) voy a llegar a que ss'(i+1, j) = V. Por ende, C_{i+1} debe pertenecer a A.
+
+- Si C_{i+1} pertenece a A: como A suma j puedo notar que j >= C_{i+1}
+
+Luego, ss'(i+1, j) = ss'(i, j) || ss'(i, j-C[i+1])
+
+Sea D = A - {C_{i+1}}. Es facil observar que D está incluido en {C_1, ..., C_i} y que suma j - {C_{i+1}}.
+Luego, usando mi HI puedo concluir que ss'(i, j-C[i+1]) = V.
+
+Con este último resultado llego a que ss'(i+1, j) = V. Por ende, C_{i+1} no debe pertenecer a A.
+
+Llegué a un absurdo proveniente de suponer existe un subconjunto de {C_1, ..., C_{i+1}} que suma j y ss'(i+1, j) = F. En conclusión, probé que: 
+existe algún subconjunto A de B = {C_1, ..., C_{i+1}} que suma j => ss'(i+1, j) = V
+
+(<=)
+
+P(i): ss'(i, j) = V => existe algún subconjunto A de B = {C_1, ..., C_i} que suma j
+
+P(0): ss'(0, j) = j == 0 = V
+
+Luego, existe un subconjunto de {} que suma 0 y ese es el {}.
+
+P(i+1): ss'(i+1, j) = V  => existe algún subconjunto A de B = {C_1, ..., C_{i+1}} que suma j
+
+Quiero ver que P(i) => P(i+1). Mi HI es P(i).
+
+ss'(i+1, j) = { ss'(i, j)                      si i != 0 && C[i] > j
+              { ss'(i, j) || ss'(i, j-C[i+1])  si no
+
+Dividamos en casos.
+
+- Si ss'(i+1, j) = ss'(i,j):
+
+Como supongo a mi antecedente verdadero => ss'(i, j) = V.
+
+Luego, usando mi HI sé que existe algún subconjunto A de B = {C_1, ..., C_i} que suma j. Se puede notar que
+si A está incluido en {C_1, ..., C_i} => A está incluido en {C_1, ..., C_{i+1}}. Luego, probé lo que quería.
+
+- Si ss'(i+1, j) = ss'(i, j) || ss'(i, j-C[i+1]):
+
+Como mi antecedente es verdadero, tengo dos posibilidades:
+
+- ss'(i, j) = V: ya visto arriba
+
+- ss'(i, j-C[i+1]) = V: puedo usar mi HI acá y ver que existe algún subconjunto A de B = {C_1, ..., C_i} que suma j-C[i+1]. Notar que este subconjunto unión {C_{i+1}} está incluido en {C_1, ..., C_{i+1}} y ahora suma
+j - C[i+1] + C[i+1] = j. Luego, probé lo que quería.
+
+Finalmente, en ambos casos llegúe a ver que que existe algún subconjunto A de B = {C_1, ..., C_{i+1}} que suma j.
+
+Con estas dos pruebas, puedo concluir que la función ss' es correcta.
